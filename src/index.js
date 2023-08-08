@@ -7,17 +7,20 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use(fileUpload());
 
-export function processCsvFile(file) {
-    const worker = new Worker("./src/fileProcessor.js", {
-        workerData: {
-            buffer: file.data,
-        }
-    })
-    worker.once("message", () => {
-        console.log(file.name, "processed.");
-    })
-    worker.once("error", (e) => {
-        throw new Error(e.message);
+export async function processCsvFile(file) {
+    return new Promise((res, _) => {
+        const worker = new Worker("./src/fileProcessor.js", {
+            workerData: {
+                buffer: file.data,
+            }
+        })
+        worker.once("message", () => {
+            console.log(file.name, "processed.");
+            res()
+        })
+        worker.once("error", (e) => {
+            throw new Error(e.message);
+        })
     })
 }
 
@@ -25,9 +28,8 @@ app.post("/invites", async (req, res) => {
     try {
         const files = req.files?.files;
         if (files) {
-            files.forEach(async (f) => {
-                processCsvFile(f);
-            })
+            await Promise.all(files.map(f => processCsvFile(f)))
+            console.log("done.")
             res.status(200).json({ message: "sent the invites successfully." })
         }
     } catch (error) {
