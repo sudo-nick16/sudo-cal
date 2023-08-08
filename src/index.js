@@ -1,6 +1,7 @@
 import express from "express";
 import { Worker } from "worker_threads";
 import fileUpload from "express-fileupload";
+import { PORT } from "./constants.js";
 
 const app = express();
 app.use(express.json());
@@ -38,7 +39,7 @@ app.post("/invites", async (req, res) => {
     }
 });
 
-app.listen(process.env.PORT || 3000, () => {
+app.listen(PORT || 3000, () => {
     console.log("Server running on port 3000");
 });
 
