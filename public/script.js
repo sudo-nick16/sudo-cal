@@ -31,8 +31,11 @@ fileContainer.addEventListener("change", (event) => {
             return;
         }
     }
-    const fileList = event.target.files[0];
-    notify(`added "${fileList.name}"`)
+    const fileList = [];
+    for (let i = 0; i < event.target.files.length; ++i) {
+        fileList.push(event.target.files[i])
+    }
+    notify(`added "${fileList.map(f => f.name).join(",")}"`)
 });
 
 submit.addEventListener("click", async (event) => {
@@ -43,7 +46,7 @@ submit.addEventListener("click", async (event) => {
         return;
     }
     const formData = new FormData();
-    for (let i = 0; i < fileContainer.files.length; ++i){
+    for (let i = 0; i < fileContainer.files.length; ++i) {
         formData.append("files", fileContainer.files[i]);
     }
     console.log("submit");

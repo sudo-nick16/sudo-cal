@@ -15,15 +15,16 @@ bufferToStream(buf)
     .on("data", (data) => {
         results.push(data);
     })
-    .on("end", () => {
-        results.forEach((r) => {
-            const startTime = getDateObj(r.date, r.time);
-            const invitees = r.invitees.split(",");
-            const inv = createInvite(r.topic, startTime);
-            invitees.forEach((i) => {
-                sendMail(i, inv);
-            });
-        });
+    .on("end", async () => {
+        await Promise.all(results.map(async (r) => {
+            return new Promise(async (res, _) => {
+                const startTime = getDateObj(r.date, r.time);
+                const invitees = r.invitees.split(",");
+                const inv = createInvite(r.topic, startTime);
+                await Promise.all(invitees.map((i) => sendMail(i, inv)))
+                res();
+            })
+        }));
         parentPort.postMessage("processed")
     })
 
