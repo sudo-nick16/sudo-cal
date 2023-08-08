@@ -1,37 +1,32 @@
 import express from "express";
+import { Worker } from "worker_threads";
 import fileUpload from "express-fileupload";
-import csv from "csv-parser";
-import { sendMail } from "./mailer.js";
-import { bufferToStream, createInvite, getDateObj } from "./utils.js";
 
 const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 app.use(fileUpload());
 
-app.post("/invites", (req, res) => {
+export function processCsvFile(file) {
+    const worker = new Worker("./src/fileProcessor.js", {
+        workerData: {
+            buffer: file.data,
+        }
+    })
+    worker.once("message", () => {
+        console.log(file.name, "processed.");
+    })
+    worker.once("error", (e) => {
+        throw new Error(e.message);
+    })
+}
+
+app.post("/invites", async (req, res) => {
     try {
         const files = req.files?.files;
         if (files) {
-            files.forEach(f => {
-                const buf = f.data;
-                const results = [];
-                bufferToStream(buf)
-                    .pipe(csv())
-                    .on("data", (data) => {
-                        results.push(data);
-                    })
-                    .on("end", () => {
-                        results.forEach((r) => {
-                            const startTime = getDateObj(r.date, r.time);
-                            const invitees = r.invitees.split(",");
-                            const inv = createInvite(r.topic, startTime);
-                            invitees.forEach((i) => {
-                                sendMail(i, inv);
-                            });
-                        });
-                        console.log("processed file", f.name);
-                    })
+            files.forEach(async (f) => {
+                processCsvFile(f);
             })
             res.status(200).json({ message: "sent the invites successfully." })
         }
